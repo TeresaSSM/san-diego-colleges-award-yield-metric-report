@@ -4,14 +4,7 @@
 # =====================================================
 
 library(pacman)
-p_load(tidyverse, skimr, scales)
-
-theme_set(theme_classic())
-
-# colors for the award types (used in the charts)
-award_colors <- c("Degree"             = "#c23022",
-                  "Credit certificate" = "#ec7c2b",
-                  "Noncredit"          = "#f8dfa5")
+p_load(tidyverse, skimr, scales, patchwork, ggthemes)
 
 
 ## 1. READ THE RAW FILES (never edited)
@@ -166,28 +159,23 @@ nrow(sd_colleges)
 sd_data <- latest %>% inner_join(sd_colleges, by = "college")
 
 ## 8. CHARTS
-district_colors <- c("San Diego CCD"           = "#9b2c0a",
-                     "Grossmont-Cuyamaca CCD"  = "#c23022",
-                     "Palomar CCD"             = "#ec7c2b",
-                     "MiraCosta CCD"           = "#deac23",
-                     "Southwestern CCD"        = "#f8dfa5")
 
 # Chart 1: award yield, colored by district
-fig1 <- sd_data %>%
+fig1<-sd_data %>%
   ggplot(aes(x = reorder(college, yield_per_100), y = yield_per_100, fill = district)) +
   geom_col() +
   geom_hline(yintercept = median_yield, linetype = "dashed") +
-  scale_fill_manual(values = district_colors, name = NULL) +
   coord_flip() +
   labs(title = "The three San Diego CCD colleges have the lowest award yields in the county",
        subtitle = "Awards per 100 students, 2025-26. Dashed line = statewide median of credit-based colleges",
        x = NULL,
-       y = "Awards per 100 students")
+       y = "Awards per 100 students")+ theme_stata() + scale_fill_stata(name = NULL) + 
+  theme(axis.text.y = element_text(angle = 0, hjust = 1))
 
 # Fig 2: award mix at each college
 yield_order <- sd_data %>% arrange(yield_per_100) %>% pull(college)
 
-fig2 <- sd_data %>%
+fig2<-sd_data %>%
   select(college, Degree, `Credit certificate`, Noncredit) %>%
   pivot_longer(cols = c(Degree, `Credit certificate`, Noncredit),
                names_to = "award_group", values_to = "share") %>%
@@ -195,23 +183,35 @@ fig2 <- sd_data %>%
          award_group = factor(award_group, levels = names(award_colors)))%>%
   ggplot(aes(x = college, y = share, fill = award_group)) +
   geom_col() +
-  scale_fill_manual(values = award_colors, name = NULL) +
   coord_flip() +
   labs(title = "Degrees are the largest share of awards at 7 of 8 colleges",
        subtitle = "Share of awards by type, 2025-26",
        x = NULL,
-       y = "% of awards")
+       y = "% of awards") + 
+  theme_stata() + 
+  scale_fill_stata(name = NULL) + 
+  theme(axis.text.y = element_text(angle = 0, hjust = 1))
 #Fig 3: Awards vs Headcount
 core%>%
   mutate(fill_group = case_when(
     college %in% sd_colleges$college ~ "sd_college",
     TRUE ~ "non_sd_college"))%>%
-  ggplot(aes(x=headcount, y=awards, color = fill_group, shape= fill_group))+
-  geom_point()
+  ggplot(aes(x=headcount, y=awards))+
+  geom_smooth(method = "lm", se = FALSE)+
+  geom_point(size=6, aes(color = fill_group, shape= fill_group)) + 
+  theme_stata() + 
+  labs(title = "Headcount vs Awards, 2025-2026",
+       x = "College Headcount",
+       y = "Awards") +
+  scale_color_stata(name = NULL, labels = c("sd_college"     = "San Diego metro area",
+                                            "non_sd_college" = "Other community colleges")) + 
+  scale_shape_stata(name = NULL, labels = c("sd_college"     = "San Diego metro area",
+                                            "non_sd_college" = "Other community colleges"))+ 
+  theme(axis.text.y = element_text(angle = 0, hjust = 1))
 
-fig1
+fig1 
 fig2
-library(patchwork)
+
 
 fig1/fig2
 
