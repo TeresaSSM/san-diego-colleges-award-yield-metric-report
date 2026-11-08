@@ -6,4 +6,4 @@ Data source was the California Community Colleges Chancellor's Office Data Mart.
 ![Overview of results for the analysis:](San_Diego_Community_College_Metrics_Analysis.jpg)
 
 
-**Files:** `CCCCO_Analysis_Script.R` (analysis), `San Diego County Colleges Award Yield Report.Rmd` (report), `ProgAwards.csv` and `StudentHeadcounts.csv` (raw data files).
+**Files:** `Award Yield and Award Mix: San Diego County Community Colleges` (PDF report), `CCCCO_Analysis_Script.R` (analysis script), `San Diego County Colleges Award Yield Report.Rmd` (R Markdown script for the report), `ProgAwards.csv` and `StudentHeadcounts.csv` (raw data files).
