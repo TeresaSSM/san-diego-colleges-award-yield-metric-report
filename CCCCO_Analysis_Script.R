@@ -4,8 +4,7 @@
 # =====================================================
 
 library(pacman)
-p_load(tidyverse, skimr, scales, patchwork, ggthemes)
-
+p_load(tidyverse, skimr, scales, patchwork, ggthemes, ggrepel)
 
 ## 1. READ THE RAW FILES (never edited)
 awards_raw   <- read.csv("ProgAwards.csv")
@@ -135,7 +134,7 @@ latest <- yield_mix %>% filter(year == "2025-2026")
 core   <- latest %>% filter(Noncredit < 100)      # all credit-based colleges
 median_yield <- median(core$yield_per_100)        # statewide median, for context
 
-# Find the exact spellings (edit the tribble below to match what prints)
+# Find exact spellings 
 latest %>%
   filter(str_detect(college, "(?i)san diego|grossmont|cuyamaca|palomar|miracosta|southwestern")) %>%
   select(college, headcount, Noncredit)
@@ -162,14 +161,17 @@ sd_data <- latest %>% inner_join(sd_colleges, by = "college")
 
 # Chart 1: award yield, colored by district
 fig1<-sd_data %>%
-  ggplot(aes(x = reorder(college, yield_per_100), y = yield_per_100, fill = district)) +
+  mutate(fill_group=case_when(district == "San Diego CCD" ~ "San Diego Community College District (SDCCD)",
+                              TRUE ~ "Other San Diego county districts"))%>%
+  ggplot(aes(x = reorder(college, yield_per_100), y = yield_per_100, fill = fill_group)) +
   geom_col() +
   geom_hline(yintercept = median_yield, linetype = "dashed") +
   coord_flip() +
-  labs(title = "The three San Diego CCD colleges have the lowest award yields in the county",
-       subtitle = "Awards per 100 students, 2025-26. Dashed line = statewide median of credit-based colleges",
+  labs(title = "SDCCD's 3 colleges have the lowest award yields in the county",
+       subtitle = "Awards per 100 students, 2025-2026. Dashed line is statewide median of credit-based colleges",
        x = NULL,
-       y = "Awards per 100 students")+ theme_stata() + scale_fill_stata(name = NULL) + 
+       y = "Awards per 100 students")+ theme_stata() + 
+  scale_fill_manual(values=c("#FFE080", "#FFB600" ), name= NULL)+
   theme(axis.text.y = element_text(angle = 0, hjust = 1))
 
 # Fig 2: award mix at each college
@@ -180,45 +182,74 @@ fig2<-sd_data %>%
   pivot_longer(cols = c(Degree, `Credit certificate`, Noncredit),
                names_to = "award_group", values_to = "share") %>%
   mutate(college = factor(college, levels = yield_order),
-         award_group = factor(award_group, levels = names(award_colors)))%>%
+         award_group = factor(award_group))%>%
   ggplot(aes(x = college, y = share, fill = award_group)) +
   geom_col() +
   coord_flip() +
   labs(title = "Degrees are the largest share of awards at 7 of 8 colleges",
-       subtitle = "Share of awards by type, 2025-26",
+       subtitle = "Share of awards by type, 2025-2026",
        x = NULL,
        y = "% of awards") + 
   theme_stata() + 
-  scale_fill_stata(name = NULL) + 
+  scale_fill_viridis_d(option = "mako",begin = 0.1, end = 0.9,direction = -1, name = NULL)+
   theme(axis.text.y = element_text(angle = 0, hjust = 1))
-#Fig 3: Awards vs Headcount
-core%>%
+
+#Fig 3: Awards vs Headcount 
+cor(core$headcount, core$awards)
+
+fig3<-core%>%
   mutate(fill_group = case_when(
     college %in% sd_colleges$college ~ "sd_college",
     TRUE ~ "non_sd_college"))%>%
   ggplot(aes(x=headcount, y=awards))+
-  geom_smooth(method = "lm", se = FALSE)+
-  geom_point(size=6, aes(color = fill_group, shape= fill_group)) + 
+  geom_smooth(method = "lm", se = FALSE, colour = "black")+
+  geom_point(size=6, aes(color = fill_group), alpha=0.75) + 
   theme_stata() + 
   labs(title = "Headcount vs Awards, 2025-2026",
        x = "College Headcount",
        y = "Awards") +
-  scale_color_stata(name = NULL, labels = c("sd_college"     = "San Diego metro area",
+  scale_color_manual(values=c("#555759", "#FFB600" ), name = NULL, 
+                     labels = c("sd_college"     = "San Diego county",
                                             "non_sd_college" = "Other community colleges")) + 
-  scale_shape_stata(name = NULL, labels = c("sd_college"     = "San Diego metro area",
-                                            "non_sd_college" = "Other community colleges"))+ 
-  theme(axis.text.y = element_text(angle = 0, hjust = 1))
+  theme(axis.text.y = element_text(angle = 0, hjust = 1))+
+  geom_text_repel(data = filter(core, college %in% sd_colleges$college),
+                  aes(label = college),
+                  size = 4,
+                  fontface = "bold",
+                  box.padding = 2.2,        # space around each label (was 0.8)
+                  point.padding = 0.8,      # space kept between labels and points (was 0.6)
+                  force = 3,                # labels push apart harder
+                  force_pull = 0.2,         # lower = labels are pulled less back toward their point
+                  min.segment.length = 0,
+                  max.overlaps = Inf,
+                  show.legend = FALSE)
 
 fig1 
 fig2
 
 
-fig1/fig2
+fig3+(fig1/fig2)
 
-ggsave("chart1_yield.png", fig1, width = 8, height = 5, dpi = 200)
-ggsave("chart2_mix.png",   fig2, width = 8, height = 5, dpi = 200)
+ggsave("chart1_yield.png", fig1, width = 8, height = 5, dpi = 1000)
+ggsave("chart2_mix.png",   fig2, width = 8, height = 5, dpi = 1000)
 
-# Small table for the report
+## STATISTICAL TESTS
+# Q1a: are the 8 San Diego colleges centered on the statewide median?
+wilcox.test(sd_data$yield_per_100, mu = median_yield)
+# Q2: 3 SDCCD colleges vs. the other 5 San Diego County colleges
+sd_grouped <- sd_data %>%
+  mutate(sdccd = if_else(district == "San Diego CCD", "SDCCD", "Other SD County"))
+
+sd_grouped %>%
+  group_by(sdccd) %>%
+  summarize(n = n(),
+            median_yield = median(yield_per_100),
+            min = min(yield_per_100),
+            max = max(yield_per_100))
+
+wilcox.test(yield_per_100 ~ sdccd, data = sd_grouped)
+
+# Small table
 sd_data %>%
   select(college, district, headcount, yield_per_100, Degree, `Credit certificate`, Noncredit) %>%
   arrange(desc(yield_per_100))

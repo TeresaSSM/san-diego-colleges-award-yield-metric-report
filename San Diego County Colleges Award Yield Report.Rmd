@@ -1,0 +1,91 @@
+---
+title: "Award Yield and Award Mix: San Diego County Community Colleges, 2025-2026"
+author: "Teresa McCarrell"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document: default
+  github_document: default
+---
+
+```{r setup, include = FALSE}
+library(pacman)
+p_load(tidyverse, rmarkdown, knitr)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+source("CCCCO_Analysis_Script.R")
+
+n_colleges  <- nrow(sd_data)
+yield_min   <- min(sd_data$yield_per_100)
+yield_max   <- max(sd_data$yield_per_100)
+
+sdccd_max   <- sd_data %>% filter(district == "San Diego CCD")  %>% pull(yield_per_100) %>% max()
+other_min   <- sd_data %>% filter(district != "San Diego CCD")  %>% pull(yield_per_100) %>% min()
+
+n_degree_top <- sum(sd_data$Degree > sd_data$`Credit certificate` &
+                    sd_data$Degree > sd_data$Noncredit)
+cert_top     <- sd_data %>% slice_max(`Credit certificate`, n = 1) %>% pull(college)
+
+
+
+```
+
+```{css, echo=FALSE}
+body {
+  font-family: Arial, sans-serif;
+  font-size: 12pt;
+  line-height: 1.35;
+  max-width: 7.5in;
+  margin: 0.4in auto;
+}
+h1.title { font-size: 20pt; }
+h2 { font-size: 14pt; margin-top: 14px; }
+table { font-size: 10.5pt; }
+```
+
+## Key Takeaways
+
+Among the `r n_colleges` credit-based community colleges in San Diego County, award yield ranges from `r round(yield_min, 1)` to `r round(yield_max, 1)` awards per 100 students. The median for the county is 13.9, which is not significantly different. There is wide variation within the county, ranging from 6.5 at San Diego Mesa to 20.9 at Grossmont. The three San Diego Community College District (SDCCD) colleges have the lowest yields for the county. The three SDCCD colleges have a median yield of 7.3 awards per 100 students, compared with 16.0 for the other five county colleges. 
+
+
+## Introduction and Methodology
+
+- **Data Source:** This report compares award yield (degrees and certificates awarded per 100 students) and award mix across the eight credit-based community colleges in San Diego County. Data are public figures from the California Community Colleges Chancellor’s Office Data Mart (2025-26 annual awards and headcount, downloaded 11/05/2026. Statewide comparisons use the 115 credit-based colleges; three colleges that award only noncredit awards (CalBright, North Orange Continuing Education, San Diego College of Continuing Education) are excluded from this report because their yields are not comparable.
+- **Data Checks:** Data was reshaped prior to analysis; college names were reconciled across both files, and two names were standardized; award types summed to each college's total for every college and year; award shares verified to have summed to 100%.
+
+The following two metrics were used in this report.
+
+**Award yield**: Degrees and certificates awarded per 100 students enrolled (annual headcount). This is a same-year ratio, not a cohort completion rate. 
+
+**Award mix**: The proportion of a college's awards that are degrees, credit certificates, or noncredit awards. 
+
+## Findings
+
+Figure 1: Awards rise with enrollment across credit-based colleges (line = linear fit); the award yield metric takes this into consideration with by assessing awards per 100 students. 
+
+```{r fig-yield, fig.width=6.5, fig.height=6.5, out.width="60%"}
+fig3
+```
+
+
+
+Figure 2. The three SDCCD colleges are all below 9 awards per 100 students; the other five are all above 13. The dashed line represents the statewide median yield, 14.7. The county’s eight colleges have a median yield (13.9) that is not significantly different from the statewide median (Wilcoxon signed-rank, p = 0.46). The SDCCD colleges’ median (7.3) is significantly lower than the other five’s (16.0; Wilcoxon rank-sum, p = 0.036). Note that due to group size, this is a descriptive statistic.
+
+```{r fig-y, fig.width=8, fig.height=3, out.width="90%"}
+fig1
+```
+
+Figure 3. While degrees are generally the largest share of awards, Palomar is the exception, with credit certificates at 51% and degrees at 47%. San Diego Mesa and San Diego City have the highest degree shares (80% and 75%, respectively). MiraCosta and Palomar hold the highest proportion of noncredit awards. 
+
+```{r fig-mix, fig.width=8, fig.height=3, out.width="90%"}
+fig2
+```
+
+
+
+## Limitations and Next steps
+
+- Award yield is a same-year ratio, not a cohort completion rate. The inclusion of additional years might offset biases caused by differing enrollment rates year-to-year. 
+- Equity gaps were not examined; the Data Mart awards report selector tool had no race/ethnicity breakdown.
+- *Suggested next steps:* Investigate the reasons behind SDCCD's gap in award yield compared to the rest of the county and the state median; this may be due in part to the relationship between having a higher share of degrees awarded vs a lower 'award yield' as a degree takes longer to complete in comparison to a credit certificate or non-credit award. Therefore, the cross-sectional analysis approach introduces bias against colleges which have a higher share of awards that take longer to achieve.
+
+
