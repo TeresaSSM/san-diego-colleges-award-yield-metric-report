@@ -12,16 +12,13 @@ headcount_raw <- read.csv("StudentHeadcounts.csv")
 
 
 ## 2. CLEAN THE AWARDS FILE
-# Question: how do I turn the pivot-style export into one row per college/award type/year?
-# Pattern: name columns -> flag the college rows -> fill the name down -> go long
 
-# Give the columns readable names (by position) and turn counts into numbers
+# Give the columns readable names
 awards_named <- awards_raw %>%
   setNames(c("college_label", "award_type", "2023-2024", "2024-2025", "2025-2026")) %>%
   mutate(across(c(`2023-2024`, `2024-2025`, `2025-2026`),
                 ~ parse_number(as.character(.x))))
 
-# College "Total" rows are the ones with something in college_label.
 # Copy each college's name down onto its award-type rows.
 awards_flagged <- awards_named %>%
   mutate(is_total = !is.na(college_label) & college_label != "",
@@ -29,7 +26,7 @@ awards_flagged <- awards_named %>%
   fill(college, .direction = "down") %>%
   filter(!str_detect(college, "State of California"))
 
-# Go long: one row per college x row type x year
+# One row per college x row type x year
 awards_long <- awards_flagged %>%
   pivot_longer(cols = c(`2023-2024`, `2024-2025`, `2025-2026`),
                names_to = "year",
@@ -49,8 +46,7 @@ award_detail %>%
 
 
 ## 3. CLEAN THE HEADCOUNT FILE
-# Question: how do I get one row per college and year?
-# The first 2 rows are header junk, so drop them.
+
 headcount_long <- headcount_raw %>%
   slice(-(1:2)) %>%
   setNames(c("college", "2023-2024", "2024-2025", "2025-2026")) %>%
@@ -61,8 +57,7 @@ headcount_long <- headcount_raw %>%
 
 
 ## 4. MATCH COLLEGE NAMES BETWEEN THE TWO FILES
-# Question: do both files spell every college the same way?
-# Two colleges were spelled differently, so fix them in the awards data.
+
 fix_names <- function(df) {
   df %>%
     mutate(college = str_squish(college),
@@ -131,7 +126,8 @@ yield_mix <- yield %>% left_join(award_mix, by = c("college", "year"))
 # Continuing Education is excluded (100% noncredit, so yield isn't comparable).
 
 latest <- yield_mix %>% filter(year == "2025-2026")
-core   <- latest %>% filter(Noncredit < 100)      # all credit-based colleges
+core   <- latest %>% filter(college != "North Orange Continuing Education" &
+                            college != "San Diego College of Continuing Ed")      # all credit-based colleges
 median_yield <- median(core$yield_per_100)        # statewide median, for context
 
 # Find exact spellings 

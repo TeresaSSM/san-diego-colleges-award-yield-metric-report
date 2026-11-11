@@ -1,7 +1,7 @@
 ---
 title: "Award Yield and Award Mix: San Diego County Community Colleges, 2025-2026"
 author: "Teresa McCarrell"
-date: "`r format(Sys.Date(), '%B %d, %Y')`"
+date: "11/07/2026"
 output:
   html_document: default
   github_document: default
@@ -49,7 +49,7 @@ Among the `r n_colleges` credit-based community colleges in San Diego County, aw
 
 ## Introduction and Methodology
 
-- **Data Source:** This report compares award yield (degrees and certificates awarded per 100 students) and award mix across the eight credit-based community colleges in San Diego County. Data are public figures from the California Community Colleges Chancellor’s Office Data Mart (2025-26 annual awards and headcount, downloaded 11/05/2026. Statewide comparisons use the 115 credit-based colleges; three colleges that award only noncredit awards (CalBright, North Orange Continuing Education, San Diego College of Continuing Education) are excluded from this report because their yields are not comparable.
+- **Data Source:** This report compares award yield (degrees and certificates awarded per 100 students) and award mix across the eight credit-based community colleges in San Diego County. Data are public figures from the California Community Colleges Chancellor’s Office Data Mart (2025-26 annual awards and headcount, downloaded 11/05/2026. Statewide comparisons use the 116 credit-based colleges; three colleges that award only noncredit awards (North Orange Continuing Education and San Diego College of Continuing Education) are excluded from this report because their yields are not comparable.
 - **Data Checks:** Data was reshaped prior to analysis; college names were reconciled across both files, and two names were standardized; award types summed to each college's total for every college and year; award shares verified to have summed to 100%.
 
 The following two metrics were used in this report.
